@@ -1,0 +1,368 @@
+<div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a
+
+        href="https://github.com/Marak/say.js#readme"
+
+    >say (v0.11.0)</a>
+</h1>
+<h4>TTS (Text To Speech) Module for Node.js</h4>
+<div class="apidocSectionDiv"><a
+    href="#apidoc.tableOfContents"
+    id="apidoc.tableOfContents"
+><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.say">module say</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.say.export">
+            function <span class="apidocSignatureSpan">say.</span>export
+            <span class="apidocSignatureSpan">(text, voice, speed, filename, callback)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.say.speak">
+            function <span class="apidocSignatureSpan">say.</span>speak
+            <span class="apidocSignatureSpan">(text, voice, speed, callback)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.say.stop">
+            function <span class="apidocSignatureSpan">say.</span>stop
+            <span class="apidocSignatureSpan">(callback)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <span class="apidocSignatureSpan">number <span class="apidocSignatureSpan">say.</span>base_speed</span>
+
+        </li>
+
+        <li>
+
+            <span class="apidocSignatureSpan">string <span class="apidocSignatureSpan">say.</span>speaker</span>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.say" id="apidoc.module.say">module say</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.say.export" id="apidoc.element.say.export">
+        function <span class="apidocSignatureSpan">say.</span>export
+        <span class="apidocSignatureSpan">(text, voice, speed, filename, callback)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">export = function (text, voice, speed, filename, callback) {
+  var commands, pipedData;
+
+  if (!text) {
+    // throw TypeError because API was used incorrectly
+    throw new TypeError(&#x27;Must provide text parameter&#x27;);
+  }
+
+  if (!filename) {
+    // throw TypeError because API was used incorrectly
+    throw new TypeError(&#x27;Must provide a filename&#x27;);
+  }
+
+  if (typeof callback !== &#x27;function&#x27;) {
+    callback = function() {};
+  }
+
+  // tailor command arguments to specific platforms
+  if (process.platform === &#x27;darwin&#x27;) {
+
+    if (!voice) {
+      commands = [ text ];
+    } else {
+      commands = [ &#x27;-v&#x27;, voice, text];
+    }
+
+    if (speed) {
+      commands.push(&#x27;-r&#x27;, convertSpeed(speed));
+    }
+
+    if (filename){
+        commands.push(&#x27;-o&#x27;, filename, &#x27;--data-format=LEF32@32000&#x27;);
+    }
+  }  else {
+    // if we don&#x27;t support the platform, callback with an error (next tick) - don&#x27;t continue
+    return process.nextTick(function() {
+      callback(new Error(&#x27;say.js export does not support platform &#x27; + process.platform));
+    });
+  }
+
+  childD = child_process.spawn(say.speaker, commands);
+
+  childD.stdin.setEncoding(&#x27;ascii&#x27;);
+  childD.stderr.setEncoding(&#x27;ascii&#x27;);
+
+  if (pipedData) {
+    childD.stdin.end(pipedData);
+  }
+
+  childD.stderr.once(&#x27;data&#x27;, function(data) {
+    // we can&#x27;t stop execution from this function
+    callback(new Error(data));
+  });
+
+  childD.addListener(&#x27;exit&#x27;, function (code, signal) {
+    if (code === null || signal !== null) {
+      return callback(new Error(&#x27;say.js: could not talk, had an error [code: &#x27; + code + &#x27;] [signal: &#x27; + signal + &#x27;]&#x27;));
+    }
+
+    childD = null;
+
+    callback(null);
+  });
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+    return console.error(err);
+  }
+
+  console.log(&#x27;Text has been spoken.&#x27;);
+});
+
+// Export spoken audio to a WAV file
+say.<span class="apidocCodeKeywordSpan">export</span>(&#x22;I&#x27;m sorry, Dave.&#x22;, &#x27;Cellos&#x27;, 0.75, &#x27;hal.wav
+&#x27;, function(err) {
+  if (err) {
+    return console.error(err);
+  }
+
+  console.log(&#x27;Text has been saved to hal.wav.&#x27;);
+});
+```
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.say.speak" id="apidoc.element.say.speak">
+        function <span class="apidocSignatureSpan">say.</span>speak
+        <span class="apidocSignatureSpan">(text, voice, speed, callback)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">speak = function (text, voice, speed, callback) {
+  var commands, pipedData;
+
+  if (typeof callback !== &#x27;function&#x27;) {
+    callback = function() {};
+  }
+
+  if (!text) {
+    // throw TypeError because API was used incorrectly
+    throw new TypeError(&#x27;Must provide text parameter&#x27;);
+  }
+
+  // tailor command arguments to specific platforms
+  if (process.platform === &#x27;darwin&#x27;) {
+    if (!voice) {
+      commands = [ text ];
+    } else {
+      commands = [ &#x27;-v&#x27;, voice, text];
+    }
+
+    if (speed) {
+      commands.push(&#x27;-r&#x27;, convertSpeed(speed));
+    }
+  } else if (process.platform === &#x27;linux&#x27;) {
+    commands = [&#x27;--pipe&#x27;];
+
+    if (speed) {
+      pipedData = &#x27;(Parameter.set \&#x27;Audio_Command &#x22;aplay -q -c 1 -t raw -f s16 -r $(($SR*&#x27; + convertSpeed(speed) + &#x27;/100)) $FILE
+&#x22;) &#x27;;
+    }
+
+    if (voice) {
+      pipedData += &#x27;(&#x27; + voice + &#x27;) &#x27;;
+    }
+
+    pipedData += &#x27;(SayText \&#x22;&#x27; + text + &#x27;\&#x22;)&#x27;;
+  } else if (process.platform === &#x27;win32&#x27;) {
+    pipedData = text;
+    commands = [ &#x27;Add-Type -AssemblyName System.speech; $speak = New-Object System.Speech.Synthesis.SpeechSynthesizer; $speak.Speak
+([Console]::In.ReadToEnd())&#x27; ];
+  } else {
+    // if we don&#x27;t support the platform, callback with an error (next tick) - don&#x27;t continue
+    return process.nextTick(function() {
+      callback(new Error(&#x27;say.js speak does not support platform &#x27; + process.platform));
+    });
+  }
+
+  var options = (process.platform === &#x27;win32&#x27;) ? { shell: true } : undefined;
+  childD = child_process.spawn(say.speaker, commands, options);
+
+  childD.stdin.setEncoding(&#x27;ascii&#x27;);
+  childD.stderr.setEncoding(&#x27;ascii&#x27;);
+
+  if (pipedData) {
+    childD.stdin.end(pipedData);
+  }
+
+  childD.stderr.once(&#x27;data&#x27;, function(data) {
+    // we can&#x27;t stop execution from this function
+    callback(new Error(data));
+  });
+
+  childD.addListener(&#x27;exit&#x27;, function (code, signal) {
+    if (code === null || signal !== null) {
+      return callback(new Error(&#x27;say.js: could not talk, had an error [code: &#x27; + code + &#x27;] [signal: &#x27; + signal + &#x27;]&#x27;));
+    }
+
+    childD = null;
+
+    callback(null);
+  });
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+
+## Usage
+
+```javascript
+var say = require(&#x27;say&#x27;);
+
+// Use default system voice and speed
+say.<span class="apidocCodeKeywordSpan">speak</span>(&#x27;Hello!&#x27;);
+
+// Stop the text currently being spoken
+say.stop();
+
+// More complex example (with an OS X voice) and slow speed
+say.speak(&#x27;whats up, dog?&#x27;, &#x27;Alex&#x27;, 0.5);
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.say.stop" id="apidoc.element.say.stop">
+        function <span class="apidocSignatureSpan">say.</span>stop
+        <span class="apidocSignatureSpan">(callback)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">stop = function (callback) {
+  if (typeof callback !== &#x27;function&#x27;) {
+    callback = function() {};
+  }
+
+  if (!childD) {
+    return callback(new Error(&#x27;No speech to kill&#x27;));
+  }
+
+  if (process.platform === &#x27;linux&#x27;) {
+    // TODO: Need to ensure the following is true for all users, not just me. Danger Zone!
+    // On my machine, original childD.pid process is completely gone. Instead there is now a
+    // childD.pid + 1 sh process. Kill it and nothing happens. There&#x27;s also a childD.pid + 2
+    // aplay process. Kill that and the audio actually stops.
+    process.kill(childD.pid + 2);
+  } else if (process.platform === &#x27;win32&#x27;) {
+    childD.stdin.pause();
+    child_process.exec(&#x27;taskkill /pid &#x27; + childD.pid + &#x27; /T /F&#x27;)
+  } else {
+    childD.stdin.pause();
+    childD.kill();
+  }
+
+  childD = null;
+
+  callback(null);
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+```javascript
+var say = require(&#x27;say&#x27;);
+
+// Use default system voice and speed
+say.speak(&#x27;Hello!&#x27;);
+
+// Stop the text currently being spoken
+say.<span class="apidocCodeKeywordSpan">stop</span>();
+
+// More complex example (with an OS X voice) and slow speed
+say.speak(&#x27;whats up, dog?&#x27;, &#x27;Alex&#x27;, 0.5);
+
+// Fire a callback once the text has completed being spoken
+say.speak(&#x27;whats up, dog?&#x27;, &#x27;Good News&#x27;, 1.0, function(err) {
+if (err) {
+...</pre></li>
+    </ul>
+
+
+
+
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
